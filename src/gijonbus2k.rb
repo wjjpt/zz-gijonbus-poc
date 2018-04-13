@@ -22,7 +22,7 @@ def w2k(url,kclient)
     puts "[#{@name}] Starting gijonbus poc thread"
     while true
         begin
-            puts "[#{@name}] Connecting to #{url}"
+            puts "[#{@name}] Connecting to #{url}" unless ENV['DEBUG'].nil?
             busjson = Net::HTTP.get(URI(url))
             next if lastdigest == Digest::MD5.hexdigest(busjson)
             bushash = JSON.parse(busjson)
@@ -32,12 +32,12 @@ def w2k(url,kclient)
                     next if lastasset["#{bus["idautobus"]}"] == timestamp
                 end
                 lastasset["#{bus["idautobus"]}"] = timestamp
-                puts "New data from bus_id: #{bus["idautobus"]}, timestamp: #{timestamp}"
+                puts "New data from bus_id: #{bus["idautobus"]}, timestamp: #{timestamp}" unless ENV['DEBUG'].nil?
                 bus["timestamp"] = timestamp
                 coord = GeoUtm::UTM.new @utmzone,bus["utmx"],bus["utmy"], GeoUtm::Ellipsoid::WGS84
                 bus["latitude"] = "#{coord.to_lat_lon.lat}"
                 bus["longitude"] = "#{coord.to_lat_lon.lon}"
-                puts "bus asset: #{JSON.pretty_generate(bus)}\n" unless ENV['DEBUG'].nil?
+                #puts "bus asset: #{JSON.pretty_generate(bus)}\n" unless ENV['DEBUG'].nil?
                 kclient.deliver_message("#{bus.to_json}",topic: "gijonbus")
             end
 
