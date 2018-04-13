@@ -15,7 +15,6 @@ kafka_broker = ENV['KAFKA_BROKER'].nil? ? "127.0.0.1" : ENV['KAFKA_BROKER']
 kafka_port = ENV['KAFKA_PORT'].nil? ? "9092" : ENV['KAFKA_PORT']
 kafka_topic = ENV['KAFKA_TOPIC'].nil? ? "gijonbus" : ENV['KAFKA_TOPIC']
 kclient = Kafka.new(seed_brokers: ["#{kafka_broker}:#{kafka_port}"], client_id: "gijonbus2k")
-kclient = false
 
 def w2k(url,kclient)
     lastasset = {}
@@ -38,8 +37,8 @@ def w2k(url,kclient)
                 coord = GeoUtm::UTM.new @utmzone,bus["utmx"],bus["utmy"], GeoUtm::Ellipsoid::WGS84
                 bus["latitude"] = "#{coord.to_lat_lon.lat}"
                 bus["longitude"] = "#{coord.to_lat_lon.lon}"
-                puts "bus asset: #{JSON.pretty_generate(bus)}\n"
-                kclient.deliver_message("#{koutput.to_json}",topic: "gijonbus")
+                puts "bus asset: #{JSON.pretty_generate(bus)}\n" unless ENV['DEBUG'].nil?
+                kclient.deliver_message("#{bus.to_json}",topic: "gijonbus")
             end
 
             sleep @time
