@@ -1,3 +1,4 @@
+[![CircleCI](https://circleci.com/gh/wjjpt/zz-gijonbus-poc/tree/master.svg?style=svg)](https://circleci.com/gh/wjjpt/zz-gijonbus-poc/tree/master)
 # zz-gijonbus-poc
 
 script for query data from Gijón Bus dataset, normalize and inject into kafka topic
