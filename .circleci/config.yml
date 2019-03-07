@@ -1,0 +1,47 @@
+version: 2
+
+workflows:
+  version: 2
+  build-n-deploy:
+    jobs:
+      - build
+
+jobs:
+  build:
+    docker:
+      - image: circleci/buildpack-deps:yakkety-curl
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - restore_cache:
+          key: zz-gijonbus-poc-cache-
+      - run:
+          name: Docker load if exists
+          command: |
+            if [ -f caches/zz-gijonbus-poc-docker.tgz ]; then
+              zcat caches/zz-gijonbus-poc-docker.tgz | docker load
+            fi
+      - run:
+          name: Build application Docker image
+          command: |
+            docker build -t ${IMAGE_NAME} .
+            mkdir -p caches
+      - run:
+          name: Save docker images and histories
+          command: |
+            docker_images=$(docker images --filter 'dangling=false' \
+              --format '{{.Repository}}:{{.Tag}}')
+            docker_histories=$(for i in ${docker_images}; \
+              do docker history -q $i | grep -v missing; \
+            done)
+            docker save ${docker_images} ${docker_histories} \
+              | gzip > caches/zz-gijonbus-poc-docker.tgz
+      - save_cache:
+          key: zz-gijonbus-poc-cache-{{ checksum "caches/zz-gijonbus-poc-docker.tgz" }}
+          paths:
+            - caches/zz-gijonbus-poc-docker.tgz
+      - persist_to_workspace:
+          root: caches
+          paths:
+            - zz-gijonbus-poc-docker.tgz
