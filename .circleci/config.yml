@@ -5,6 +5,13 @@ workflows:
   build-n-deploy:
     jobs:
       - build
+      - publish-latest:
+          requires:
+            - build
+          filters:
+            branches:
+              only: master
+
 
 jobs:
   build:
@@ -47,3 +54,31 @@ jobs:
           root: caches
           paths:
             - zz-gijonbus-poc-docker.tgz
+
+  publish-latest:
+    docker:
+      - image: google/cloud-sdk:latest
+    steps:
+      - attach_workspace:
+          at: caches
+      - setup_remote_docker
+      - run:
+          name: Load docker images
+          command: zcat caches/zz-gijonbus-poc-docker.tgz | docker load
+      - run:
+          name: Config gcloud
+          command: |
+            set +o pipefail
+            echo $GCP_AUTH | base64 --decode --ignore-garbage > ${HOME}/gcloud-service-key.json
+            gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
+            gcloud config set project $GCP_PROJECT
+      - run:
+          name: Tag master
+          command: |
+            docker tag ${IMAGE_NAME}:latest gcr.io/${GCP_PROJECT}/${IMAGE_NAME}:latest
+      - run:
+          name: Push latest image to Google Cloud Registry
+          command: |
+            gcloud auth configure-docker --quiet
+            docker push gcr.io/${GCP_PROJECT}/${IMAGE_NAME}:latest
+
